@@ -21,13 +21,13 @@ npm install
 cd ../backend
 npm install
 
-#### To start the frontend 
+## To start the frontend 
 Run this command from the root directory of frontend.
 
 npm run dev
 
-##### To start the backend
+## To start the backend
 Run this command from the root directory of backend.
 
-npm start
+npm run dev
 

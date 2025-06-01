@@ -1,9 +1,11 @@
-const realNames = [
+import { User } from '../types/User';
+
+const realNames: string[] = [
   "Olivia Parker", "Liam Bennett", "Sophia Hughes", "Noah Edwards", "Isabella Ward",
   "Mason Brooks", "Ava Coleman", "Elijah Sanders", "Mia James", "Lucas Richardson"
 ];
 
-const avatarUrls = [
+const avatarUrls: string[] = [
   "https://randomuser.me/api/portraits/women/65.jpg",
   "https://randomuser.me/api/portraits/men/23.jpg",
   "https://randomuser.me/api/portraits/women/12.jpg",
@@ -16,11 +18,11 @@ const avatarUrls = [
   "https://randomuser.me/api/portraits/men/39.jpg"
 ];
 
-const users = Array.from({ length: 10 }, (_, i) => {
+const users: User[] = Array.from({ length: 10 }, (_, i) => {
   const id = i + 1;
   return {
     id,
-   name: realNames[i],
+    name: realNames[i],
     picture: avatarUrls[i],
     posts: [
       {
@@ -76,4 +78,4 @@ const users = Array.from({ length: 10 }, (_, i) => {
   };
 });
 
-module.exports = users;
+export default users;
