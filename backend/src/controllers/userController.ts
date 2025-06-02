@@ -1,36 +1,54 @@
 import { Request, Response } from 'express';
-import usersData from '../data/users';
-import { User, Post } from '../types/User'; 
+import { findUserById } from '../utils/userHelpers';
+import { UpdatePostBody } from '../types/User';
+import { GetUserPostsQuery } from '../types/User';
 
-const users: User[] = usersData;
+const DEFAULT_POSTS_LIMIT = 4;
+
 
 export const getUsers = (req: Request, res: Response) => {
-  res.json(users);
+  res.json(require('../data/users')); 
 };
 
 export const getUserById = (req: Request, res: Response): void => {
   try {
-    const user = users.find(u => u.id === parseInt(req.params.id));
-    if (!user) {
-      res.status(404).json({ error: 'User not found' });
+    const id = parseInt(req.params.id);
+    if (isNaN(id)) {
+      res.status(400).json({ success: false, message: 'Invalid user ID' });
       return;
     }
+
+    const user = findUserById(id);
+    if (!user) {
+      res.status(404).json({ success: false, message: 'User not found' });
+      return;
+    }
+
     res.json(user);
   } catch (error) {
-    res.status(500).json({ success: false, message: error });
+    res.status(500).json({ success: false, message: (error as Error).message });
   }
 };
 
-export const getUserPosts = (req: Request, res: Response): void => {
+export const getUserPosts = (
+  req: Request<{ id: string }, any, any, GetUserPostsQuery>,
+  res: Response
+): void => {
   try {
-    const user = users.find(u => u.id === parseInt(req.params.id));
+    const userId = parseInt(req.params.id);
+    if (isNaN(userId)) {
+      res.status(400).json({ success: false, message: 'Invalid user ID' });
+      return;
+    }
+
+    const user = findUserById(userId);
     if (!user) {
-      res.status(404).json({ error: 'User not found' });
+      res.status(404).json({ success: false, message: 'User not found' });
       return;
     }
 
     const page = parseInt(req.query.page as string) || 1;
-    const limit = parseInt(req.query.limit as string) || 4;
+    const limit = parseInt(req.query.limit as string) || DEFAULT_POSTS_LIMIT;
 
     const startIndex = (page - 1) * limit;
     const endIndex = startIndex + limit;
@@ -45,28 +63,66 @@ export const getUserPosts = (req: Request, res: Response): void => {
       totalPosts,
     });
   } catch (error) {
-    res.status(500).json({ success: false, message: error });
+    res.status(500).json({ success: false, message: (error as Error).message });
   }
 };
 
-export const updateUserPost = (req: Request, res: Response): void => {
+
+export const updateUserPost = (
+  req: Request<{ userId: string; postId: string }, any, UpdatePostBody>,
+  res: Response
+): void => {
   try {
-    const { userId, postId } = req.params;
-    const user = users.find(u => u.id === parseInt(userId));
+    const userId = parseInt(req.params.userId);
+    const postId = parseInt(req.params.postId);
+
+    if (isNaN(userId) || isNaN(postId)) {
+      res.status(400).json({ success: false, message: 'Invalid userId or postId' });
+      return;
+    }
+
+    const user = findUserById(userId);
     if (!user) {
-      res.status(404).json({ error: 'User not found' });
+      res.status(404).json({ success: false, message: 'User not found' });
       return;
     }
 
-    const postIndex = user.posts.findIndex(p => p.id === parseInt(postId));
+    const postIndex = user.posts.findIndex(p => p.id === postId);
     if (postIndex === -1) {
-      res.status(404).json({ error: 'Post not found' });
+      res.status(404).json({ success: false, message: 'Post not found' });
       return;
     }
 
-    user.posts[postIndex] = { ...user.posts[postIndex], ...req.body };
-    res.json(user.posts[postIndex]);
+  const { title, content } = req.body;
+
+ if (typeof title === 'string') {
+  user.posts[postIndex].title = title;
+ }
+
+ if (typeof content === 'string') {
+  user.posts[postIndex].content = content;
+ }
+
+ res.json({ success: true, post: user.posts[postIndex] });
   } catch (error) {
-    res.status(500).json({ success: false, message: error });
+    res.status(500).json({ success: false, message: (error as Error).message });
   }
 };
+
+// export const deleteUserPost = (req: Request, res: Response) => {
+//   const { userId, postId } = req.params;
+
+//   const users = users.find(u => u.id === userId);
+//   if (!user) {
+//     return res.status(404).json({ success: false, message: 'User not found' });
+//   }
+
+//   const postIndex = user.posts.findIndex(p => p.id === postId);
+//   if (postIndex === -1) {
+//     return res.status(404).json({ success: false, message: 'Post not found' });
+//   }
+
+//   user.posts.splice(postIndex, 1);
+
+//   return res.json({ success: true, message: `Post ${postId} deleted successfully` });
+// };

@@ -20,7 +20,7 @@ export default function BlogDetail() {
   const [edit, setEdit] = useState(false);
 
   useEffect(() => {
-    if (post) return; // if post passed via state, no need to fetch
+    if (post) return; 
     if (!id) return;
 
     const userId = Math.floor(parseInt(id) / 10);
@@ -36,7 +36,7 @@ export default function BlogDetail() {
   const handleSave = async () => {
     if (!id) return;
     try {
-      const response = await api.put<Post>(`https://jsonplaceholder.typicode.com/posts/${id}`, formData);
+      const response = await api.patch<Post>(`https://jsonplaceholder.typicode.com/posts/${id}`, formData);
       setPost(response.data);
       setEdit(false);
       message.success('Post updated');

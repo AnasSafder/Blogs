@@ -1,5 +1,5 @@
-import { SetStateAction, useEffect, useState } from 'react';
-import { Button, Typography, Tabs, Pagination } from 'antd';
+import {  useEffect, useState } from 'react';
+import { Button, Typography, Tabs, Pagination,  Alert, Skeleton } from 'antd';
 import { UpOutlined, DownOutlined } from '@ant-design/icons';
 import api from '../api/axios';
 import { useNavigate } from 'react-router-dom';
@@ -18,27 +18,111 @@ export default function Blogs() {
   const [posts, setPosts] = useState<Post[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPosts, setTotalPosts] = useState(0);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const postsPerPage = 4;
 
   const navigate = useNavigate();
   const [userId] = useState(() => Math.floor(Math.random() * 10) + 1);
 
   const fetchPosts = (page: number) => {
+    setLoading(true);
+    setError(null);
+
     api
       .get<{ posts: Post[]; totalPosts: number }>(`/users/${userId}/posts?page=${page}&limit=${postsPerPage}`)
-      .then((res: { data: { posts: SetStateAction<Post[]>; totalPosts: SetStateAction<number>; }; }) => {
-        console.log('API response:', res.data);
+      .then((res) => {
         setPosts(res.data.posts);
         setTotalPosts(res.data.totalPosts);
       })
-      .catch((err: any) => {
+      .catch((err) => {
         console.error('Error fetching posts:', err);
+        setError('Failed to fetch posts. Please try again later.');
+      })
+      .finally(() => {
+        setLoading(false);
       });
   };
 
   useEffect(() => {
     fetchPosts(currentPage);
   }, [currentPage]);
+
+  const renderPosts = () => {
+    if (loading) {
+      return Array.from({ length: postsPerPage }).map((_, i) => (
+        <Skeleton key={i} active avatar paragraph={{ rows: 2 }} />
+      ));
+    }
+
+    if (error) {
+      return <Alert message="Error" description={error} type="error" showIcon />;
+    }
+
+    if (!posts.length) {
+      return <Typography.Text>No blog posts found.</Typography.Text>;
+    }
+
+    return posts.map((post) => (
+      <div
+        key={post.id}
+        style={{
+          display: 'flex',
+          backgroundColor: 'white',
+          borderRadius: '8px',
+          padding: '16px',
+          alignItems: 'flex-start',
+          gap: '16px',
+          cursor: 'pointer',
+        }}
+      >
+        <img
+          src={post.image || '/public/image.png'}
+          alt="Blog"
+          style={{
+            width: 100,
+            height: 100,
+            borderRadius: 8,
+            objectFit: 'cover',
+            marginRight: 16,
+          }}
+        />
+        <div style={{ flex: 1 }}>
+          <Typography.Title
+            level={5}
+            style={{
+              marginBottom: 8,
+              margin: 0,
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+            }}
+          >
+            <span>{post.title}</span>
+            <Typography.Text type="secondary" style={{ fontSize: '13px', fontWeight: 600 }}>
+              {new Date(post.date).toLocaleDateString('en-US', {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric',
+              })}
+            </Typography.Text>
+          </Typography.Title>
+          <Typography.Paragraph style={{ marginBottom: 8 }}>{post.content}</Typography.Paragraph>
+          <Button
+            type="link"
+            style={{
+              color: '#1890ff',
+              padding: 0,
+              fontWeight: 500,
+            }}
+            onClick={() => navigate(`/posts/${post.id}`, { state: { post } })}
+          >
+            Read More
+          </Button>
+        </div>
+      </div>
+    ));
+  };
 
   return (
     <>
@@ -79,76 +163,20 @@ export default function Blogs() {
       >
         <TabPane tab="ALL POSTS" key="1">
           <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-            {posts.map((post) => (
-              <div
-                key={post.id}
-                style={{
-                  display: 'flex',
-                  backgroundColor: 'white',
-                  borderRadius: '8px',
-                  padding: '16px',
-                  alignItems: 'flex-start',
-                  gap: '16px',
-                  cursor: 'pointer',
-                }}
-              >
-                <img
-                  src={post.image}
-                  alt="Blog"
-                  style={{
-                    width: 100,
-                    height: 100,
-                    borderRadius: 8,
-                    objectFit: 'cover',
-                    marginRight: 16,
-                  }}
-                />
-                <div style={{ flex: 1 }}>
-                  <Typography.Title
-                    level={5}
-                    style={{
-                      marginBottom: 8,
-                      margin: 0,
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      alignItems: 'center',
-                    }}
-                  >
-                    <span>{post.title}</span>
-                    <Typography.Text type="secondary" style={{ fontSize: '13px', fontWeight: 600 }}>
-                      {new Date(post.date).toLocaleDateString('en-US', {
-                        year: 'numeric',
-                        month: 'short',
-                        day: 'numeric',
-                      })}
-                    </Typography.Text>
-                  </Typography.Title>
-                  <Typography.Paragraph style={{ marginBottom: 8 }}>{post.content}</Typography.Paragraph>
-                  <Button
-                    type="link"
-                    style={{
-                      color: '#1890ff',
-                      padding: 0,
-                      fontWeight: 500,
-                    }}
-                  onClick={() => navigate(`/posts/${post.id}`, { state: { post } })}
-                  >
-                    Read More
-                  </Button>
-                </div>
-              </div>
-            ))}
+            {renderPosts()}
           </div>
 
-          <div style={{ display: 'flex', justifyContent: 'center', marginTop: 24 }}>
-            <Pagination
-              current={currentPage}
-              pageSize={postsPerPage}
-              total={totalPosts}
-              onChange={(page) => setCurrentPage(page)}
-              showSizeChanger={false}
-            />
-          </div>
+          {!loading && !error && posts.length > 0 && (
+            <div style={{ display: 'flex', justifyContent: 'center', marginTop: 24 }}>
+              <Pagination
+                current={currentPage}
+                pageSize={postsPerPage}
+                total={totalPosts}
+                onChange={(page) => setCurrentPage(page)}
+                showSizeChanger={false}
+              />
+            </div>
+          )}
         </TabPane>
 
         <TabPane tab="LATEST POSTS" key="2">
