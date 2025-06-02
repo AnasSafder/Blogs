@@ -18,9 +18,11 @@ export default function App() {
             <AppHeader />
             <Content style={{ margin: '16px' }}>
               <Routes>
-                <Route path="/" element={<Dashboard />} />
+                <Route path="/" element={<Blogs />} />
                 <Route path="/blogs" element={<Blogs />} />
                 <Route path="/posts/:id" element={<BlogDetail />} />
+                <Route path="/dashboard" element={<Dashboard />} />
+
                 <Route path="*" element={<Navigate to="/" replace />} />
               </Routes>
             </Content>

@@ -3,6 +3,8 @@ import { Button, Typography, Tabs, Pagination,  Alert, Skeleton } from 'antd';
 import { UpOutlined, DownOutlined } from '@ant-design/icons';
 import api from '../api/axios';
 import { useNavigate } from 'react-router-dom';
+import { fetchUserPosts } from '../services/postService';
+
 
 const { TabPane } = Tabs;
 
@@ -25,24 +27,22 @@ export default function Blogs() {
   const navigate = useNavigate();
   const [userId] = useState(() => Math.floor(Math.random() * 10) + 1);
 
-  const fetchPosts = (page: number) => {
-    setLoading(true);
-    setError(null);
+  const fetchPosts = async (page: number) => {
+  setLoading(true);
+  setError(null);
 
-    api
-      .get<{ posts: Post[]; totalPosts: number }>(`/users/${userId}/posts?page=${page}&limit=${postsPerPage}`)
-      .then((res) => {
-        setPosts(res.data.posts);
-        setTotalPosts(res.data.totalPosts);
-      })
-      .catch((err) => {
-        console.error('Error fetching posts:', err);
-        setError('Failed to fetch posts. Please try again later.');
-      })
-      .finally(() => {
-        setLoading(false);
-      });
-  };
+  try {
+    const data = await fetchUserPosts(userId, page, postsPerPage);
+    setPosts(data.posts);
+    setTotalPosts(data.totalPosts);
+  } catch (err) {
+    console.error('Error fetching posts:', err);
+    setError('Failed to fetch posts. Please try again later.');
+  } finally {
+    setLoading(false);
+  }
+};
+
 
   useEffect(() => {
     fetchPosts(currentPage);
